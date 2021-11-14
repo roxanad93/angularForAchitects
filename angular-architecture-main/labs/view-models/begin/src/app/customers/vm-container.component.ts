@@ -14,34 +14,41 @@ import { CustomerVm } from './customer-vm';
   selector: 'app-vm-container',
   styleUrls: ['./view-model.css'],
   template: `
+    <button (click)="addCustomer()" class="btn btn-primary button-row">
+      Add Customer
+    </button>
 
-  <button (click)="addCustomer()" class="btn btn-primary button-row">Add Customer</button>
-
-  <!-- Bind to "showDeleted" as a checkbox and toggle it when changed -->
-  <div (click)="toggleShowDeleted()"><input type="checkbox" [checked]="showDeleted"> Show Deleted</div>
-
-  <div *ngIf="vms$ | async as vms" class="row">
-
-    <!-- Customer List -->
-    <div class="col-md-2">
-      <app-vm-customer-list [vms]="vms" (selected)="selected($event)"></app-vm-customer-list>
+    <!-- Bind to "showDeleted" as a checkbox and toggle it when changed -->
+    <div (click)="toggleShowDeleted()">
+      <input type="checkbox" [checked]="showDeleted" /> Show Deleted
     </div>
 
-    <!-- Customer Detail -->
-    <div class="col-md-5">
-      <app-vm-customer-details [vm]="selectedVm" (cancel)="cancel()" (save)="save($event)"></app-vm-customer-details>
+    <div *ngIf="vms$ | async as vms" class="row">
+      <!-- Customer List -->
+      <div class="col-md-2">
+        <app-vm-customer-list
+          [vms]="vms"
+          (selected)="selected($event)"
+        ></app-vm-customer-list>
+      </div>
+
+      <!-- Customer Detail -->
+      <div class="col-md-5">
+        <app-vm-customer-details
+          [vm]="selectedVm"
+          (cancel)="cancel()"
+          (save)="save($event)"
+        ></app-vm-customer-details>
+      </div>
     </div>
-
-  </div>
-
   `,
 })
 export class VmContainerComponent {
-
   vms$: Observable<CustomerVm[]>;
   selectedVm: CustomerVm;
 
   // Add "showDeleted" boolean property
+  showDeleted: boolean;
 
   constructor(private dataService: CustomerOrdersDataService) {
     this.createVm$();
@@ -50,9 +57,11 @@ export class VmContainerComponent {
   /** Create observable of Customer ViewModels from cached customers */
   createVm$() {
     this.vms$ = this.dataService.customers$.pipe(
-      map(customers =>
+      map((customers) =>
         // Filter customers before mapping to include or exclude deleted customers based on showDeleted flag.
-        customers.map(customer => CustomerVm.create(customer))
+        customers
+          .filter((customer) => this.showDeleted || !customer.isDeleted)
+          .map((customer) => CustomerVm.create(customer))
       )
     );
   }
@@ -79,7 +88,7 @@ export class VmContainerComponent {
 
   // The toggleShowDeleted method should (a) toggle the flag and (b) re-create the ViewModel observable
   toggleShowDeleted() {
-
-    
+    this.showDeleted = !this.showDeleted;
+    this.createVm$();
   }
 }
